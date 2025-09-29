@@ -1,0 +1,213 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Alex's Slippery Snake</title>
+        <link href="https://fonts.googleapis.com/css?family=Antic+Slab" rel="stylesheet">
+
+    </head>
+
+    <body style = "background-color: #f8c694;">
+        <h1 style = "text-align: center; font-family: 'Antic Slab', serif; color: black;">Alex's Slippery Snake</h1>
+
+        <div id = "score"; style = "text-align: center; font-family: 'Antic Slab', serif; color: black;">0</div>
+        <canvas id = "gameCanvas" width="300" height="300" style="border:1px solid magenta;"></canvas>
+        <button id = "restartButton">Restart</button>
+        <style>
+            #gameCanvas {
+                position: relative;
+                top: 25%;
+                left: 30%;
+            }
+            
+            #score {
+                font-size: 100px;
+            }
+
+            #restartButton {
+                position: absolute;
+                top: 75%;
+                left: 42%;
+                font-family: 'Antic Slab', serif;
+                font-size: 20px;
+                background-color: magenta;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                cursor: pointer;
+            }
+        </style>
+    </body>
+
+    <script>
+        const GAME_SPEED = 100;
+        const restartButton = document.getElementById('restartButton')
+
+        //Refresh the page to restart the game
+        restartButton.addEventListener('click', () => {
+            window.location.reload();
+        });
+
+        //Declare the snake as an array of coordinates
+        let snake = [
+            { x: 150, y: 150 },
+            { x: 140, y: 150 },
+            { x: 130, y: 150 },
+            { x: 120, y: 150 },
+            { x: 110, y: 150 },
+        ];
+
+        // The user's score
+        let score = 0;
+        // When set to true the snake is changing direction
+        let changingDirection = false;
+        // Food x-coordinate
+        let foodX;
+        // Food y-coordinate
+        let foodY;
+        // Horizontal velocity
+        let dx = 10;
+        // Vertical velocity
+        let dy = 0;
+
+        //Get the Canvas element
+        const gameCanvas = document.getElementById("gameCanvas");
+        //Return a two-dimensional drawing context
+        const ctx = gameCanvas.getContext("2d");
+
+        //Calling the main function to start the game
+        main();
+        //Create the starting food
+        createFood();
+       
+
+        //Call changeDirection when a key is pressed
+        document.addEventListener("keydown", changeDirection);
+        
+
+        
+        //Defining the main function
+        function main() {
+            if (didGameEnd()) return alert('Game Over! Your score was ' + score);
+            setTimeout(function onTick() {
+                changingDirection = false;
+                clearCanvas();
+                drawFood();
+                advanceSnake();
+                drawSnake();
+
+                main();
+            }, GAME_SPEED);
+        }
+
+        //Clear the Canvas
+        function clearCanvas() {
+            ctx.fillStyle = "black";
+            ctx.strokeStyle = "magenta";
+            ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+        }
+        
+        //Draw the food on the canvas
+        function drawFood() {
+            ctx.fillStyle = 'red';
+            ctx.strokeStyle = 'darkred';
+            ctx.fillRect(foodX, foodY, 10, 10);
+            ctx.strokeRect(foodX, foodY, 10, 10);
+        }
+
+        
+        //Function to move the snake
+        function advanceSnake() {
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+            snake.unshift(head);
+
+            const didEatFood = snake[0].x === foodX && snake[0].y === foodY;
+            if (didEatFood) {
+                score += 10;
+                //Display the score
+                document.getElementById('score').innerHTML = score;
+                createFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        //Determine if the user has lost the game
+        function didGameEnd() {
+            for (let i = 4; i < snake.length; i++) {
+                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true
+            }
+
+            const hitLeftWall = snake[0].x < 0;
+            const hitRightWall = snake[0].x > gameCanvas.width - 10;
+            const hitToptWall = snake[0].y < 0;
+            const hitBottomWall = snake[0].y > gameCanvas.height - 10;
+
+            return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall
+        }
+
+        function randomTen(min, max) {
+            return Math.round((Math.random() * (max-min)+min)/10) * 10;
+        }
+
+        
+        //Function to create snake food at a random location
+        function createFood() {
+            foodX = randomTen(0, gameCanvas.width - 10);
+            foodY = randomTen(0, gameCanvas.height - 10);
+            snake.forEach(function isFoodOnSnake(part) {
+                const foodIsOnSnake = part.x == foodX && part.y == foodY;
+                if (foodIsOnSnake) createFood();
+            });
+        }
+
+        //Print the snake to the canvas
+        function drawSnake() { 
+            snake.forEach(drawSnakePart) 
+        }
+
+        //Create the snake
+        function drawSnakePart(snakePart) {
+            ctx.fillStyle = 'lightpink';
+            ctx.strokeStyle = 'magenta';
+            ctx.fillRect(snakePart.x, snakePart.y, 10, 10);
+            ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+        }
+
+        //Change the direction the snake is moving
+        function changeDirection(event) {
+            const LEFT_KEY = 37;
+            const RIGHT_KEY = 39;
+            const UP_KEY = 38;
+            const DOWN_KEY = 40;
+
+            //Dont let the snake reverse
+            if (changingDirection) return;
+            changingDirection = true;
+
+            const keyPressed = event.keyCode;
+
+            const goingUp = dy === -10;
+            const goingDown = dy === 10;
+            const goingRight = dx === 10;
+            const goingLeft = dx === -10;
+
+            if (keyPressed === LEFT_KEY && !goingRight) {
+                dx = -10; 
+                dy = 0;
+            }
+            if (keyPressed === UP_KEY && !goingDown) {
+                dx = 0;
+                dy = -10;
+            }
+            if (keyPressed === RIGHT_KEY && !goingLeft) {
+                dx = 10;
+                dy = 0;
+            }
+            if (keyPressed === DOWN_KEY && !goingUp) {
+                dx = 0;
+                dy = 10;
+            }
+        }
+    </script>
+</html>
